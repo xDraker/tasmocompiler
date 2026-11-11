@@ -99,7 +99,7 @@ const switchToBranch = async (branch) => {
     await git(tasmotaRepo).checkout(branch);
     return branch;
   } catch (e) {
-    throw new Error(`Switching to branch ${branch} failed`);
+    throw new Error(`Switching to branch ${branch} failed: ${e.message}`);
   }
 };
 
