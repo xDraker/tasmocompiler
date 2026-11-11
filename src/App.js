@@ -58,6 +58,7 @@ class App extends Component {
       showMessageBox: false,
       showDownloadLinks: false,
       compileMessages: '',
+      diagnosticPostResult: '',
       features: {},
       network: {},
       version: {},
@@ -101,6 +102,24 @@ class App extends Component {
       showMessageBox: false,
       showDownloadLinks: false,
     }));
+  };
+
+  testDiagnosticPost = () => {
+    this.setState({ diagnosticPostResult: 'Enviando POST de prueba (no inicia compilación)...' });
+    fetch('/api/v1/diagnostic-post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ probe: 'render-cloudflare-post', timestamp: new Date().toISOString() }),
+    })
+      .then(async (res) => {
+        const body = await res.text();
+        this.setState({
+          diagnosticPostResult: `HTTP ${res.status} ${res.statusText}\\nURL: ${res.url}\\nContent-Type: ${res.headers.get('content-type') || '(sin dato)'}\\nCF-Ray: ${res.headers.get('cf-ray') || '(no expuesto al navegador)'}\\nRespuesta:\\n${body.slice(0, 2000)}`,
+        });
+      })
+      .catch((error) => {
+        this.setState({ diagnosticPostResult: `Error: ${error.name}: ${error.message}` });
+      });
   };
 
   handleCompile = (data) => {
@@ -220,6 +239,18 @@ class App extends Component {
                 />
               </Stepper>
               {showMessageBox && <MessageBox {...this.props} compileMessages={compileMessages} />}
+              {activeStep === 4 && (
+                <div style={{ margin: '16px 24px', padding: '12px', border: '1px solid #999', borderRadius: '4px' }}>
+                  <button type='button' onClick={this.testDiagnosticPost}>
+                    Probar POST sin compilar
+                  </button>
+                  {this.state.diagnosticPostResult && (
+                    <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', marginTop: '12px' }}>
+                      {this.state.diagnosticPostResult}
+                    </pre>
+                  )}
+                </div>
+              )}
               {showDownloadLinks && <DownloadLinks {...this.props} features={other.features} />}
             </div>
           </IntlProvider>
