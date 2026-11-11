@@ -117,24 +117,43 @@ class App extends Component {
       () => {
         const { compiling, showMessageBox, message, activeStep, tags, compileMessages, ...postData } = this.state;
 
-        fetch(uri, {
-          method: 'POST',
-          body: JSON.stringify(postData),
-          headers: { 'Content-Type': 'application/json' },
-        })
-          .then((res) => res.json())
-          .then((json) => {
-            if (!json.ok) {
-              this.setState((state) => {
-                let newMessages = state.compileMessages;
-                newMessages = `${newMessages}${json.message}`;
-                return { compileMessages: newMessages, compiling: false };
-              });
-            }
+        this.setState({ compileMessages: 'DIAGNÓSTICO: botón ejecutado. Preparando POST /api/v1/compile...\\n' });
+
+        try {
+          fetch(uri, {
+            method: 'POST',
+            body: JSON.stringify(postData),
+            headers: { 'Content-Type': 'application/json' },
           })
-          .catch((error) => {
-            this.setState({ compileMessages: error.message, compiling: false });
-          });
+            .then((res) => {
+              this.setState((state) => ({
+                compileMessages: `${state.compileMessages}DIAGNÓSTICO: respuesta HTTP ${res.status}.\\n`,
+              }));
+              return res.json();
+            })
+            .then((json) => {
+              this.setState((state) => ({
+                compileMessages: `${state.compileMessages}DIAGNÓSTICO: respuesta JSON recibida (ok=${json.ok}).\\n`,
+              }));
+              if (!json.ok) {
+                this.setState((state) => ({
+                  compileMessages: `${state.compileMessages}${json.message}\\n`,
+                  compiling: false,
+                }));
+              }
+            })
+            .catch((error) => {
+              this.setState((state) => ({
+                compileMessages: `${state.compileMessages}DIAGNÓSTICO: error en petición/respuesta: ${error.name}: ${error.message}\\n`,
+                compiling: false,
+              }));
+            });
+        } catch (error) {
+          this.setState((state) => ({
+            compileMessages: `${state.compileMessages}DIAGNÓSTICO: excepción al iniciar fetch: ${error.name}: ${error.message}\\n`,
+            compiling: false,
+          }));
+        }
       }
     );
   };
