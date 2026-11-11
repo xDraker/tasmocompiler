@@ -77,6 +77,20 @@ app.get('/api/v1/pullrepo', (req, res) => {
     });
 });
 
+// Temporary diagnostic endpoint: tests a plain JSON POST without starting a firmware build.
+app.post('/api/v1/diagnostic-post', (req, res) => {
+  const cfRay = req.get('cf-ray') || null;
+  debug(`Diagnostic POST received. CF-Ray: ${cfRay || 'not present'}`);
+  res.status(200).send({
+    ok: true,
+    test: 'diagnostic-post',
+    method: req.method,
+    contentType: req.get('content-type') || null,
+    cfRay,
+    bodyReceived: req.body,
+  });
+});
+
 app.post('/api/v1/compile', (req, res) => {
   const requiredKeys = ['version', 'features', 'network'];
   if (_.isEmpty(req.body) || !requiredKeys.every((e) => e in req.body)) {
