@@ -57,41 +57,33 @@ const getRepoTags = async () => {
 };
 
 const switchToBranch = async (branch) => {
-  const tags = await getRepoTags();
-  let notLocalBranches;
-
   try {
     await git(tasmotaRepo).reset('hard');
   } catch (e) {
-    const message = 'Unable to RESET repository';
-    debug(message);
-    throw new Error(message);
+    throw new Error(`Unable to RESET repository: ${e.message}`);
   }
 
   try {
     await git(tasmotaRepo).clean('dfx');
   } catch (e) {
-    const message = 'Unable to CLEAN repository';
-    debug(message);
-    throw new Error(message);
+    throw new Error(`Unable to CLEAN repository: ${e.message}`);
   }
 
-  try {
-    const summary = await git(tasmotaRepo).branchLocal();
-    const localBranches = Object.keys(summary.branches);
-    notLocalBranches = _.difference(tags, localBranches);
-  } catch (e) {
-    const message = 'Cannot get the list of local BRANCHES';
-    debug(message);
-    throw new Error(message);
-  }
-
-  if (_.indexOf(notLocalBranches, branch) > -1) {
+  // The development branch is a remote branch, while version releases are tags.
+  if (branch === edgeBranch) {
     try {
-      await git(tasmotaRepo).checkoutBranch(branch, branch);
+      await git(tasmotaRepo).fetch('origin', branch);
+      const summary = await git(tasmotaRepo).branchLocal();
+      const localBranches = Object.keys(summary.branches);
+
+      if (localBranches.includes(branch)) {
+        await git(tasmotaRepo).checkout(branch);
+      } else {
+        await git(tasmotaRepo).checkoutBranch(branch, `origin/${branch}`);
+      }
       return branch;
     } catch (e) {
-      throw new Error(`Switching to branch ${branch} failed: ${e.message}`);
+      throw new Error(`Switching to remote branch ${branch} failed: ${e.message}`);
     }
   }
 
@@ -99,7 +91,7 @@ const switchToBranch = async (branch) => {
     await git(tasmotaRepo).checkout(branch);
     return branch;
   } catch (e) {
-    throw new Error(`Switching to branch ${branch} failed: ${e.message}`);
+    throw new Error(`Switching to version/tag ${branch} failed: ${e.message}`);
   }
 };
 
