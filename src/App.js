@@ -134,7 +134,7 @@ class App extends Component {
               const contentType = res.headers.get('content-type') || '(sin content-type)';
               return res.text().then((body) => {
                 this.setState((state) => ({
-                  compileMessages: `${state.compileMessages}DIAGNÓSTICO: respuesta HTTP ${res.status} ${res.statusText}.\\nURL de respuesta: ${res.url}\\nContent-Type: ${contentType}\\nCuerpo (máx. 1000 caracteres):\\n${body.slice(0, 1000)}\\n`,
+                  compileMessages: `${state.compileMessages}DIAGNÓSTICO: respuesta HTTP ${res.status} ${res.statusText}.\\nURL de respuesta: ${res.url}\\nContent-Type: ${contentType}\\nCabeceras de respuesta:\\n${Array.from(res.headers.entries()).map(([key, value]) => `${key}: ${value}`).join('\\n')}\\nCuerpo inicial (máx. 500 caracteres):\\n${body.slice(0, 500)}\\nCuerpo final (últimos 2500 caracteres):\\n${body.slice(-2500)}\\n`,
                 }));
 
                 let json;
