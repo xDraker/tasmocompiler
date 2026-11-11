@@ -120,20 +120,40 @@ class App extends Component {
         this.setState({ compileMessages: 'DIAGNÓSTICO: botón ejecutado. Preparando POST /api/v1/compile...\\n' });
 
         try {
+          const requestUrl = new URL(uri, window.location.href).href;
+          this.setState((state) => ({
+            compileMessages: `${state.compileMessages}DIAGNÓSTICO: URL solicitada: ${requestUrl}\\n`,
+          }));
+
           fetch(uri, {
             method: 'POST',
             body: JSON.stringify(postData),
             headers: { 'Content-Type': 'application/json' },
           })
             .then((res) => {
-              this.setState((state) => ({
-                compileMessages: `${state.compileMessages}DIAGNÓSTICO: respuesta HTTP ${res.status}.\\n`,
-              }));
-              return res.json();
+              const contentType = res.headers.get('content-type') || '(sin content-type)';
+              return res.text().then((body) => {
+                this.setState((state) => ({
+                  compileMessages: `${state.compileMessages}DIAGNÓSTICO: respuesta HTTP ${res.status} ${res.statusText}.\\nURL de respuesta: ${res.url}\\nContent-Type: ${contentType}\\nCuerpo (máx. 1000 caracteres):\\n${body.slice(0, 1000)}\\n`,
+                }));
+
+                let json;
+                try {
+                  json = JSON.parse(body);
+                } catch (error) {
+                  this.setState((state) => ({
+                    compileMessages: `${state.compileMessages}DIAGNÓSTICO: la respuesta no es JSON válido.\\n`,
+                    compiling: false,
+                  }));
+                  return null;
+                }
+                return json;
+              });
             })
             .then((json) => {
+              if (!json) return;
               this.setState((state) => ({
-                compileMessages: `${state.compileMessages}DIAGNÓSTICO: respuesta JSON recibida (ok=${json.ok}).\\n`,
+                compileMessages: `${state.compileMessages}DIAGNÓSTICO: JSON recibido (ok=${json.ok}).\\n`,
               }));
               if (!json.ok) {
                 this.setState((state) => ({
